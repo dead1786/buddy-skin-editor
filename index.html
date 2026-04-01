@@ -776,21 +776,28 @@ function charWidth(ch) {
 }
 
 // ===== Parse line into 12-cell grid =====
+// Parse line into 12 cells, tracking source positions for {E}
 function lineToCells(line, eye) {
-  const rendered = line.replace(/\{E\}/g, eye);
   let cells = [];
-  for (let i = 0; i < rendered.length && cells.length < 12; i++) {
-    const ch = rendered[i];
-    cells.push(ch);
-    if (isFullWidth(ch)) cells.push(null); // placeholder for 2nd half
+  let i = 0;
+  while (i < line.length && cells.length < 12) {
+    if (line.substring(i, i + 3) === '{E}') {
+      cells.push({ ch: eye, isEye: true, srcIdx: i });
+      i += 3;
+    } else {
+      const ch = line[i];
+      cells.push({ ch, isEye: false, srcIdx: i });
+      if (isFullWidth(ch)) cells.push({ ch: null, isEye: false, srcIdx: i }); // fullwidth 2nd half
+      i++;
+    }
   }
-  while (cells.length < 12) cells.push(' ');
+  while (cells.length < 12) cells.push({ ch: ' ', isEye: false, srcIdx: -1 });
   return cells.slice(0, 12);
 }
 
-// ===== Cells back to line string =====
+// Rebuild line from cells back to string with {E} markers
 function cellsToLine(cells) {
-  return cells.filter(c => c !== null).join('');
+  return cells.filter(c => c && c.ch !== null).map(c => c.isEye ? '{E}' : c.ch).join('');
 }
 
 // ===== RENDER =====
@@ -818,73 +825,53 @@ function renderGrid() {
   for (let row = 0; row < 5; row++) {
     const cells = lineToCells(frame[row], state.eye);
     for (let col = 0; col < 12; col++) {
-      const cell = document.createElement('div');
-      cell.className = 'grid-cell';
-      if (row === 0) cell.classList.add('hat-row');
-      const ch = cells[col];
-      if (ch === null) {
-        cell.style.background = 'var(--surface2)';
-        cell.style.opacity = '0.3';
+      const cellEl = document.createElement('div');
+      cellEl.className = 'grid-cell';
+      if (row === 0) cellEl.classList.add('hat-row');
+      const c = cells[col];
+      if (!c || c.ch === null) {
+        cellEl.style.background = 'var(--surface2)';
+        cellEl.style.opacity = '0.3';
       } else {
-        cell.textContent = ch;
-        // Check if this is an eye position
-        const rawLine = frame[row];
-        if (rawLine.includes('{E}')) {
-          const eyePositions = [];
-          let searchIdx = 0;
-          while ((searchIdx = rawLine.indexOf('{E}', searchIdx)) !== -1) {
-            eyePositions.push(searchIdx);
-            searchIdx += 3;
-          }
-          // This is approximate
-          if (ch === state.eye) cell.classList.add('eye-slot');
-        }
+        cellEl.textContent = c.ch;
+        if (c.isEye) cellEl.classList.add('eye-slot');
       }
-      if (row > 0 && ch !== null) {
-        cell.onclick = () => handleCellClick(row, col, cell);
-        cell.oncontextmenu = (e) => {
+      if (row > 0 && c && c.ch !== null) {
+        cellEl.onclick = () => handleCellClick(row, col);
+        cellEl.oncontextmenu = (e) => {
           e.preventDefault();
           saveHistory();
-          const frame = state.frames[state.currentFrame];
-          frame[row] = rebuildLine(frame[row], col, ' ', state.eye);
+          modifyCell(row, col, ' ');
           renderAll();
         };
       }
-      grid.appendChild(cell);
+      grid.appendChild(cellEl);
     }
   }
 }
 
-function handleCellClick(row, col, cellEl) {
+// Modify a single cell and rebuild the line string
+function modifyCell(row, col, newChar) {
+  const frame = state.frames[state.currentFrame];
+  const cells = lineToCells(frame[row], state.eye);
+  if (col >= cells.length) return;
+  const isSettingEye = (newChar === '{E}');
+  cells[col] = { ch: isSettingEye ? state.eye : newChar, isEye: isSettingEye, srcIdx: -1 };
+  frame[row] = cellsToLine(cells);
+}
+
+function handleCellClick(row, col) {
   if (state.selectedChar) {
     saveHistory();
-    const frame = state.frames[state.currentFrame];
-    let line = frame[row];
-    // Convert to array, replace at position, convert back
-    const cells = [];
-    const rendered = line.replace(/\{E\}/g, state.eye);
-    for (let i = 0; i < rendered.length; i++) cells.push(rendered[i]);
-    while (cells.length < 12) cells.push(' ');
-
-    if (state.selectedChar === '{E}') {
-      // Replace with eye placeholder - need to work with raw line
-      cells[col] = state.eye;
-      frame[row] = cells.slice(0, 12).join('');
-      // Re-insert {E} at this position
-      const before = frame[row].substring(0, col);
-      const after = frame[row].substring(col + 1);
-      frame[row] = before + '{E}' + after;
-    } else {
-      cells[col] = state.selectedChar;
-      // Rebuild the line preserving {E} markers
-      // Simple approach: if original had {E}, try to preserve
-      frame[row] = rebuildLine(frame[row], col, state.selectedChar, state.eye);
-    }
+    modifyCell(row, col, state.selectedChar);
     renderAll();
     return;
   }
 
   // Open inline input
+  const cellEls = document.querySelectorAll('.grid-cell');
+  const cellEl = cellEls[row * 12 + col];
+  if (!cellEl) return;
   const rect = cellEl.getBoundingClientRect();
   const input = document.createElement('div');
   input.className = 'cell-input';
@@ -896,16 +883,12 @@ function handleCellClick(row, col, cellEl) {
   inp.focus();
   inp.onkeydown = (e) => {
     if (e.key === 'Escape') { input.remove(); return; }
-    if (e.key === 'Enter' || (inp.value.length === 1 && e.key !== 'Backspace')) {
-      const ch = inp.value || ' ';
-      if (isFullWidth(ch)) {
-        showWidthWarning();
-      }
+    if (e.key === 'Backspace' || e.key === 'Delete') {
       saveHistory();
-      const frame = state.frames[state.currentFrame];
-      frame[row] = rebuildLine(frame[row], col, ch, state.eye);
+      modifyCell(row, col, ' ');
       input.remove();
       renderAll();
+      return;
     }
   };
   inp.oninput = () => {
@@ -913,8 +896,7 @@ function handleCellClick(row, col, cellEl) {
       const ch = inp.value[0];
       if (isFullWidth(ch)) showWidthWarning();
       saveHistory();
-      const frame = state.frames[state.currentFrame];
-      frame[row] = rebuildLine(frame[row], col, ch, state.eye);
+      modifyCell(row, col, ch);
       input.remove();
       renderAll();
     }
@@ -922,36 +904,6 @@ function handleCellClick(row, col, cellEl) {
   inp.onblur = () => setTimeout(() => input.remove(), 100);
 }
 
-function rebuildLine(originalLine, col, newChar, eye) {
-  // Render the line to get actual characters
-  const rendered = originalLine.replace(/\{E\}/g, eye);
-  const chars = [...rendered];
-  while (chars.length < 12) chars.push(' ');
-  chars[col] = newChar;
-
-  // Try to preserve {E} markers
-  let result = chars.slice(0, 12).join('');
-
-  // Find eye positions in original
-  let eyeCount = (originalLine.match(/\{E\}/g) || []).length;
-  if (eyeCount > 0) {
-    // Find positions of eye char in result and replace back with {E}
-    let replaced = 0;
-    let newResult = '';
-    for (let i = 0; i < result.length && replaced < eyeCount; i++) {
-      if (result[i] === eye && i !== col) {
-        newResult += '{E}';
-        replaced++;
-      } else {
-        newResult += result[i];
-      }
-    }
-    newResult += result.substring(newResult.length - (replaced * 2));
-    if (replaced === eyeCount) result = newResult;
-  }
-
-  return result;
-}
 
 function showWidthWarning() {
   const w = document.getElementById('widthWarning');
