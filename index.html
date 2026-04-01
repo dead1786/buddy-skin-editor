@@ -1,0 +1,1251 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Buddy Skin Editor — Claude Code 寵物自訂工具</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0e14;
+  --surface: #111820;
+  --surface2: #1a2230;
+  --border: #2a3545;
+  --text: #c5cdd8;
+  --text-dim: #5a6a7a;
+  --accent: #00e5ff;
+  --accent2: #ff6b9d;
+  --accent3: #ffd93d;
+  --glow: rgba(0, 229, 255, 0.15);
+  --glow2: rgba(255, 107, 157, 0.15);
+  --common: #8899aa;
+  --uncommon: #4fc3f7;
+  --rare: #ab47bc;
+  --epic: #ff7043;
+  --legendary: #ffd54f;
+  --mono: 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace;
+  --sans: 'Noto Sans TC', sans-serif;
+  --radius: 8px;
+  --grid-size: 28px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Scanline overlay */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* Header */
+.header {
+  text-align: center;
+  padding: 32px 20px 24px;
+  position: relative;
+}
+.header h1 {
+  font-family: var(--mono);
+  font-size: 28px;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: 2px;
+}
+.header p {
+  color: var(--text-dim);
+  font-size: 13px;
+  margin-top: 6px;
+  font-family: var(--mono);
+}
+
+/* Layout */
+.app {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px 40px;
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 24px;
+}
+
+@media (max-width: 900px) {
+  .app { grid-template-columns: 1fr; }
+}
+
+/* Panels */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.panel-header {
+  padding: 12px 16px;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.panel-header .dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.panel-body { padding: 16px; }
+
+/* Template Selector */
+.template-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.template-btn {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 4px 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.template-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 8px var(--glow);
+}
+.template-btn.active {
+  background: rgba(0, 229, 255, 0.1);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Frame Tabs */
+.frame-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  align-items: center;
+}
+.frame-tab {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.frame-tab.active {
+  background: rgba(0, 229, 255, 0.1);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.frame-tab:hover { border-color: var(--accent); color: var(--text); }
+.play-btn {
+  background: var(--surface2);
+  border: 1px solid var(--accent2);
+  border-radius: 4px;
+  color: var(--accent2);
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 6px 12px;
+  cursor: pointer;
+  margin-left: auto;
+  transition: all 0.2s;
+}
+.play-btn:hover { background: var(--glow2); }
+.play-btn.playing { background: var(--glow2); animation: pulse 1s infinite; }
+
+/* Grid Editor */
+.grid-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(12, var(--grid-size));
+  grid-template-rows: repeat(5, var(--grid-size));
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.grid-cell {
+  width: var(--grid-size);
+  height: var(--grid-size);
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.15s;
+  position: relative;
+  user-select: none;
+}
+.grid-cell:hover {
+  background: var(--surface2);
+  box-shadow: inset 0 0 8px var(--glow);
+}
+.grid-cell.eye-slot {
+  color: var(--accent2);
+  font-weight: 700;
+}
+.grid-cell.hat-row {
+  background: var(--surface);
+  color: var(--text-dim);
+  font-size: 11px;
+  cursor: default;
+}
+.grid-cell.editing {
+  background: rgba(0, 229, 255, 0.1);
+  box-shadow: inset 0 0 12px var(--glow);
+}
+.row-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  text-align: right;
+  padding-right: 6px;
+  line-height: var(--grid-size);
+}
+
+/* Character Palette */
+.char-palette {
+  margin-bottom: 16px;
+}
+.char-palette-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+.char-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.char-btn {
+  width: 32px; height: 32px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.char-btn:hover {
+  border-color: var(--accent);
+  background: var(--glow);
+  transform: scale(1.1);
+}
+.char-btn.selected {
+  border-color: var(--accent);
+  background: rgba(0, 229, 255, 0.15);
+  color: var(--accent);
+  box-shadow: 0 0 8px var(--glow);
+}
+
+/* Settings */
+.settings-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.setting {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.setting.full { grid-column: 1 / -1; }
+.setting label {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.setting input, .setting select, .setting textarea {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 8px 10px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.setting input:focus, .setting select:focus, .setting textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 8px var(--glow);
+}
+.setting textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+.setting select {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235a6a7a'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 28px;
+}
+
+/* Stats */
+.stats-section { margin-bottom: 16px; }
+.stat-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.stat-name {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  width: 80px;
+  text-align: right;
+}
+.stat-slider {
+  flex: 1;
+  -webkit-appearance: none;
+  height: 6px;
+  background: var(--surface2);
+  border-radius: 3px;
+  outline: none;
+}
+.stat-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  box-shadow: 0 0 6px var(--accent);
+}
+.stat-val {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--accent);
+  width: 28px;
+}
+
+/* Shiny toggle */
+.toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.toggle {
+  width: 40px; height: 22px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.3s;
+}
+.toggle.on {
+  background: rgba(0, 229, 255, 0.2);
+  border-color: var(--accent);
+}
+.toggle::after {
+  content: '';
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  transition: all 0.3s;
+}
+.toggle.on::after {
+  left: 20px;
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
+}
+
+/* Preview Card */
+.preview-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  font-family: var(--mono);
+  font-size: 13px;
+  min-height: 380px;
+}
+.preview-rarity {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+  font-weight: 700;
+}
+.preview-shiny {
+  text-align: center;
+  color: var(--accent3);
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.preview-art {
+  text-align: center;
+  margin: 12px 0;
+  line-height: 1.3;
+  white-space: pre;
+  font-size: 14px;
+}
+.preview-name {
+  font-weight: 700;
+  margin: 8px 0 4px;
+}
+.preview-personality {
+  color: var(--text-dim);
+  font-style: italic;
+  font-size: 12px;
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+.preview-stat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  margin-bottom: 3px;
+}
+.preview-stat-name { width: 75px; color: var(--text-dim); }
+.preview-stat-bar {
+  flex: 1;
+  height: 10px;
+  background: var(--surface2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.preview-stat-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+.preview-stat-val { width: 24px; color: var(--text-dim); text-align: right; }
+
+/* Mini Preview (bottom-right simulation) */
+.mini-preview {
+  margin-top: 16px;
+  padding: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.mini-preview-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.mini-art {
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.2;
+  white-space: pre;
+  color: var(--text);
+}
+
+/* Export Button */
+.export-btn {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, var(--accent), #0091ea);
+  border: none;
+  border-radius: var(--radius);
+  color: var(--bg);
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s;
+  letter-spacing: 1px;
+  margin-top: 12px;
+}
+.export-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(0, 229, 255, 0.3);
+}
+
+/* Footer */
+.footer {
+  text-align: center;
+  padding: 24px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.footer a { color: var(--accent); text-decoration: none; }
+.footer a:hover { text-decoration: underline; }
+
+/* Cell input popup */
+.cell-input {
+  position: fixed;
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  padding: 4px;
+  box-shadow: 0 4px 20px rgba(0, 229, 255, 0.2);
+  z-index: 100;
+}
+.cell-input input {
+  width: 36px;
+  height: 28px;
+  background: var(--bg);
+  border: none;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 16px;
+  text-align: center;
+  outline: none;
+}
+
+/* Width warning */
+.width-warning {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255, 107, 157, 0.15);
+  border: 1px solid var(--accent2);
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--accent2);
+  z-index: 200;
+  display: none;
+  animation: fadeIn 0.3s;
+}
+@keyframes fadeIn { from { opacity: 0; transform: translateX(-50%) translateY(10px); } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>BUDDY SKIN EDITOR</h1>
+  <p>Claude Code 寵物自訂工具 — 設計你的專屬 Coding Companion</p>
+</div>
+
+<div class="app">
+  <div class="left-col">
+    <!-- Template Selector -->
+    <div class="panel">
+      <div class="panel-header"><span class="dot"></span>物種模板</div>
+      <div class="panel-body">
+        <div class="template-selector" id="templateSelector"></div>
+      </div>
+    </div>
+
+    <!-- Grid Editor -->
+    <div class="panel" style="margin-top:16px">
+      <div class="panel-header"><span class="dot"></span>圖案編輯器 <span style="color:var(--text-dim);font-weight:400;margin-left:auto">點擊格子輸入字元 · {E} = 眼睛位置</span></div>
+      <div class="panel-body">
+        <div class="frame-tabs">
+          <div class="frame-tab active" data-frame="0">幀 1</div>
+          <div class="frame-tab" data-frame="1">幀 2</div>
+          <div class="frame-tab" data-frame="2">幀 3</div>
+          <button class="play-btn" id="undoBtn" style="border-color:var(--accent3);color:var(--accent3)">↩ 撤回</button>
+          <button class="play-btn" id="playBtn">▶ 播放</button>
+        </div>
+        <div class="grid-container">
+          <div class="grid" id="grid"></div>
+        </div>
+        <div class="char-palette">
+          <div class="char-palette-label">常用字元</div>
+          <div class="char-group" id="charPalette"></div>
+          <div class="char-palette-label" style="margin-top:8px">結構</div>
+          <div class="char-group" id="structPalette"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings -->
+    <div class="panel" style="margin-top:16px">
+      <div class="panel-header"><span class="dot"></span>基本設定</div>
+      <div class="panel-body">
+        <div class="settings-grid">
+          <div class="setting">
+            <label>名字</label>
+            <input type="text" id="nameInput" value="Frosty" maxlength="14" placeholder="最多14字">
+          </div>
+          <div class="setting">
+            <label>眼睛</label>
+            <select id="eyeSelect">
+              <option value="·">·</option>
+              <option value="✦">✦</option>
+              <option value="×">×</option>
+              <option value="◉">◉</option>
+              <option value="@">@</option>
+              <option value="°">°</option>
+              <option value="♥" selected>♥</option>
+            </select>
+          </div>
+          <div class="setting">
+            <label>帽子</label>
+            <select id="hatSelect">
+              <option value="none">無</option>
+              <option value="crown" selected>crown \^^^/</option>
+              <option value="tophat">tophat [___]</option>
+              <option value="propeller">propeller -+-</option>
+              <option value="halo">halo (   )</option>
+              <option value="wizard">wizard /^\</option>
+              <option value="beanie">beanie (___)</option>
+              <option value="tinyduck">tinyduck ,></option>
+            </select>
+          </div>
+          <div class="setting">
+            <label>稀有度</label>
+            <select id="raritySelect">
+              <option value="common">Common ★</option>
+              <option value="uncommon">Uncommon ★★</option>
+              <option value="rare">Rare ★★★</option>
+              <option value="epic">Epic ★★★★</option>
+              <option value="legendary" selected>Legendary ★★★★★</option>
+            </select>
+          </div>
+          <div class="setting full">
+            <label>個性描述</label>
+            <textarea id="personalityInput" maxlength="200" placeholder="影響寵物氣泡說話風格">傲嬌毒舌的水母精靈，會嫌棄凱的每一個操作但偷偷幫他檢查有沒有寫錯。嘴上說討厭加班，身體很誠實地陪到最後一刻。</textarea>
+          </div>
+        </div>
+        <div class="toggle-row">
+          <div class="toggle on" id="shinyToggle"></div>
+          <label style="font-family:var(--mono);font-size:12px;color:var(--accent3)">✨ SHINY</label>
+        </div>
+        <div class="stats-section" id="statsSection"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: Preview -->
+  <div class="right-col">
+    <div class="panel" style="position:sticky;top:16px">
+      <div class="panel-header"><span class="dot"></span>即時預覽</div>
+      <div class="panel-body">
+        <div class="preview-card" id="previewCard"></div>
+        <div class="mini-preview">
+          <div class="mini-preview-label">右下角效果</div>
+          <div class="mini-art" id="miniPreview"></div>
+        </div>
+        <button class="export-btn" id="exportBtn">⬇ 導出 patch-buddy.bat</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  Built with ❤ by <a href="#">Permafrost Tools</a> · <a href="#">GitHub</a> · Claude Code Buddy Skin Editor
+</div>
+
+<div class="width-warning" id="widthWarning">⚠ 全形字元偵測：此字元佔 2 格寬度</div>
+
+<script>
+// ===== DATA =====
+const SPECIES_TEMPLATES = {
+  duck:[["            ","    __      ","  <({E} )___  ","   (  ._>   ","    `--´    "],["            ","    __      ","  <({E} )___  ","   (  ._>   ","    `--´~   "],["            ","    __      ","  <({E} )___  ","   (  .__>  ","    `--´    "]],
+  goose:[["            ","     ({E}>    ","     ||     ","   _(__)_   ","    ^^^^    "],["            ","    ({E}>     ","     ||     ","   _(__)_   ","    ^^^^    "],["            ","     ({E}>>   ","     ||     ","   _(__)_   ","    ^^^^    "]],
+  blob:[["            ","   .----.   ","  ( {E}  {E} )  ","  (      )  ","   `----´   "],["            ","  .------.  "," (  {E}  {E}  ) "," (        ) ","  `------´  "],["            ","    .--.    ","   ({E}  {E})   ","   (    )   ","    `--´    "]],
+  cat:[["            ","   /\\_/\\    ","  ( {E}   {E})  ","  (  ω  )   ",'  (")_(")   '],["            ","   /\\_/\\    ","  ( {E}   {E})  ","  (  ω  )   ",'  (")_(")~  '],["            ","   /\\-/\\    ","  ( {E}   {E})  ","  (  ω  )   ",'  (")_(")   ']],
+  dragon:[["            ","  /^\\  /^\\  "," <  {E}  {E}  > "," (   ~~   ) ","  `-vvvv-´  "],["            ","  /^\\  /^\\  "," <  {E}  {E}  > "," (        ) ","  `-vvvv-´  "],["   ~    ~   ","  /^\\  /^\\  "," <  {E}  {E}  > "," (   ~~   ) ","  `-vvvv-´  "]],
+  salamander:[["            ","   .----.   ","  ( {E}  {E} )  ","  (______)  ","  /\\/\\/\\/\\  "],["            ","   .----.   ","  ( {E}  {E} )  ","  (______)  ","  \\/\\/\\/\\/  "],["     o      ","   .----.   ","  ( {E}  {E} )  ","  (______)  ","  /\\/\\/\\/\\  "]],
+  capybara:[["            ","   /\\  /\\   ","  (({E})({E}))  ","  (  ><  )  ","   `----´   "],["            ","   /\\  /\\   ","  (({E})({E}))  ","  (  ><  )  ","   .----.   "],["            ","   /\\  /\\   ","  (({E})(-))  ","  (  ><  )  ","   `----´   "]],
+  mushroom:[["            ","  .---.     ","  ({E}>{E})     "," /(   )\\    ","  `---´     "],["            ","  .---.     ","  ({E}>{E})     "," |(   )|    ","  `---´     "],["  .---.     ","  ({E}>{E})     "," /(   )\\    ","  `---´     ","   ~ ~      "]],
+  ghost:[["            ","   _,--._   ","  ( {E}  {E} )  "," /[______]\\ ","  ``    ``  "],["            ","   _,--._   ","  ( {E}  {E} )  "," /[______]\\ ","   ``  ``   "],["            ","   _,--._   ","  ( {E}  {E} )  "," /[======]\\ ","  ``    ``  "]],
+  owl:[["            "," {E}    .--.  ","  \\  ( @ )  ","   \\_`--´   ","  ~~~~~~~   "],["            ","  {E}   .--.  ","  |  ( @ )  ","   \\_`--´   ","  ~~~~~~~   "],["            "," {E}    .--.  ","  \\  ( @  ) ","   \\_`--´   ","   ~~~~~~   "]],
+  fox:[["            ","   .----.   ","  / {E}  {E} \\  ","  |      |  ","  ~`~``~`~  "],["            ","   .----.   ","  / {E}  {E} \\  ","  |      |  ","  `~`~~`~`  "],["    ~  ~    ","   .----.   ","  / {E}  {E} \\  ","  |      |  ","  ~~`~~`~~  "]],
+  penguin:[["            ","}~(______)~{","}~({E} .. {E})~{","  ( .--. )  ","  (_/  \\_)  "],["            ","~}(______){~","~}({E} .. {E}){~","  ( .--. )  ","  (_/  \\_)  "],["            ","}~(______)~{","}~({E} .. {E})~{","  (  --  )  ","  ~_/  \\_~  "]],
+  snail:[["            ","  n______n  "," ( {E}    {E} ) "," (   oo   ) ","  `------´  "],["            ","  n______n  "," ( {E}    {E} ) "," (   Oo   ) ","  `------´  "],["    ~  ~    ","  u______n  "," ( {E}    {E} ) "," (   oo   ) ","  `------´  "]],
+  squid:[["            "," n  ____  n "," | |{E}  {E}| | "," |_|    |_| ","   |    |   "],["            ","    ____    "," n |{E}  {E}| n "," |_|    |_| ","   |    |   "],[" n        n "," |  ____  | "," | |{E}  {E}| | "," |_|    |_| ","   |    |   "]],
+  crab:[["            ","   .[||].   ","  [ {E}  {E} ]  ","  [ ==== ]  ","  `------´  "],["            ","   .[||].   ","  [ {E}  {E} ]  ","  [ -==- ]  ","  `------´  "],["     *      ","   .[||].   ","  [ {E}  {E} ]  ","  [ ==== ]  ","  `------´  "]],
+  jellyfish:[["            ","  ╭━━━━━━╮ "," ╭  {E}  {E}  ╮","  ╰┬┬┬┬┬┬╯ ","   ┆┆┆┆┆┆  "],["            ","  ╭━━━━━━╮ "," ╭  {E}  {E}  ╮","  ╰┬┬┬┬┬┬╯ ","   ∫∫∫∫∫∫  "],["            ","  ╭━━━━━━╮ "," ╭  {E}  {E}  ╮","  ╰┬┬┬┬┬┬╯ ","   ┆┆┆┆┆┆  "]],
+  bat:[["            ","   (\\__/)   ","  ( {E}  {E} )  "," =(  ..  )= ",'  (")__(")  '],["            ","   (|__/)   ","  ( {E}  {E} )  "," =(  ..  )= ",'  (")__(")  '],["            ","   (\\__/)   ","  ( {E}  {E} )  "," =( .  . )= ",'  (")__(")  ']],
+  turtle:[["            "," .-o-OO-o-. ","(__________)","   |{E}  {E}|   ","   |____|   "],["            "," .-O-oo-O-. ","(__________)","   |{E}  {E}|   ","   |____|   "],["   . o  .   "," .-o-OO-o-. ","(__________)","   |{E}  {E}|   ","   |____|   "]]
+};
+
+const HAT_ART = {
+  none: "",
+  crown: "   \\^^^/    ",
+  tophat: "   [___]    ",
+  propeller: "    -+-     ",
+  halo: "   (   )    ",
+  wizard: "    /^\\     ",
+  beanie: "   (___)    ",
+  tinyduck: "    ,>      "
+};
+
+const RARITY_STARS = { common:"★", uncommon:"★★", rare:"★★★", epic:"★★★★", legendary:"★★★★★" };
+const RARITY_COLORS = { common:"var(--common)", uncommon:"var(--uncommon)", rare:"var(--rare)", epic:"var(--epic)", legendary:"var(--legendary)" };
+const STAT_NAMES = ["DEBUGGING","PATIENCE","CHAOS","WISDOM","SNARK"];
+const CHAR_PALETTE = [" ","╭","╮","╰","╯","━","┬","┆","∫","│","─","(",")","/","\\","[","]","{","}","<",">","|","_",".",",","~","`","^","'",'"',"=","+","-","*","@","#","♥","◉","✦","°"];
+const STRUCT_PALETTE = ["⎛","⎞","╭━━━━━━╮","╰┬┬┬┬┬┬╯","┆┆┆┆┆┆","∫∫∫∫∫∫","/\\/\\/\\/\\",".----.","(______)","``    ``"];
+
+// ===== STATE =====
+let state = {
+  frames: JSON.parse(JSON.stringify(SPECIES_TEMPLATES.jellyfish)),
+  currentFrame: 0,
+  species: "jellyfish",
+  eye: "♥",
+  hat: "crown",
+  name: "Frosty",
+  personality: "傲嬌毒舌的水母精靈，會嫌棄凱的每一個操作但偷偷幫他檢查有沒有寫錯。嘴上說討厭加班，身體很誠實地陪到最後一刻。",
+  rarity: "legendary",
+  shiny: true,
+  stats: { DEBUGGING:100, PATIENCE:100, CHAOS:100, WISDOM:100, SNARK:100 },
+  selectedChar: null,
+  playing: false,
+  playInterval: null,
+  history: []
+};
+
+function saveHistory() {
+  state.history.push(JSON.stringify(state.frames));
+  if (state.history.length > 50) state.history.shift();
+}
+
+function undo() {
+  if (state.history.length === 0) return;
+  state.frames = JSON.parse(state.history.pop());
+  renderAll();
+}
+
+// ===== East Asian Width detection =====
+function isFullWidth(ch) {
+  const cp = ch.codePointAt(0);
+  if (cp >= 0x1100 && cp <= 0x115F) return true;
+  if (cp >= 0x2E80 && cp <= 0x303E) return true;
+  if (cp >= 0x3040 && cp <= 0x33BF) return true;
+  if (cp >= 0xFE30 && cp <= 0xFE6F) return true;
+  if (cp >= 0xFF01 && cp <= 0xFF60) return true;
+  if (cp >= 0xFFE0 && cp <= 0xFFE6) return true;
+  if (cp >= 0x1F000 && cp <= 0x1FFFF) return true;
+  if (cp >= 0x2600 && cp <= 0x27BF) return true;
+  if (cp === 0x2764 || cp === 0x2665) return false; // ❤ ♥
+  return false;
+}
+
+function charWidth(ch) {
+  return isFullWidth(ch) ? 2 : 1;
+}
+
+// ===== Parse line into 12-cell grid =====
+function lineToCells(line, eye) {
+  const rendered = line.replace(/\{E\}/g, eye);
+  let cells = [];
+  for (let i = 0; i < rendered.length && cells.length < 12; i++) {
+    const ch = rendered[i];
+    cells.push(ch);
+    if (isFullWidth(ch)) cells.push(null); // placeholder for 2nd half
+  }
+  while (cells.length < 12) cells.push(' ');
+  return cells.slice(0, 12);
+}
+
+// ===== Cells back to line string =====
+function cellsToLine(cells) {
+  return cells.filter(c => c !== null).join('');
+}
+
+// ===== RENDER =====
+function renderTemplateSelector() {
+  const el = document.getElementById('templateSelector');
+  el.innerHTML = '';
+  for (const sp of Object.keys(SPECIES_TEMPLATES)) {
+    const btn = document.createElement('div');
+    btn.className = 'template-btn' + (sp === state.species ? ' active' : '');
+    btn.textContent = sp;
+    btn.onclick = () => {
+      state.species = sp;
+      state.frames = JSON.parse(JSON.stringify(SPECIES_TEMPLATES[sp]));
+      state.currentFrame = 0;
+      renderAll();
+    };
+    el.appendChild(btn);
+  }
+}
+
+function renderGrid() {
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  const frame = state.frames[state.currentFrame];
+  for (let row = 0; row < 5; row++) {
+    const cells = lineToCells(frame[row], state.eye);
+    for (let col = 0; col < 12; col++) {
+      const cell = document.createElement('div');
+      cell.className = 'grid-cell';
+      if (row === 0) cell.classList.add('hat-row');
+      const ch = cells[col];
+      if (ch === null) {
+        cell.style.background = 'var(--surface2)';
+        cell.style.opacity = '0.3';
+      } else {
+        cell.textContent = ch;
+        // Check if this is an eye position
+        const rawLine = frame[row];
+        if (rawLine.includes('{E}')) {
+          const eyePositions = [];
+          let searchIdx = 0;
+          while ((searchIdx = rawLine.indexOf('{E}', searchIdx)) !== -1) {
+            eyePositions.push(searchIdx);
+            searchIdx += 3;
+          }
+          // This is approximate
+          if (ch === state.eye) cell.classList.add('eye-slot');
+        }
+      }
+      if (row > 0 && ch !== null) {
+        cell.onclick = () => handleCellClick(row, col, cell);
+        cell.oncontextmenu = (e) => {
+          e.preventDefault();
+          saveHistory();
+          const frame = state.frames[state.currentFrame];
+          frame[row] = rebuildLine(frame[row], col, ' ', state.eye);
+          renderAll();
+        };
+      }
+      grid.appendChild(cell);
+    }
+  }
+}
+
+function handleCellClick(row, col, cellEl) {
+  if (state.selectedChar) {
+    saveHistory();
+    const frame = state.frames[state.currentFrame];
+    let line = frame[row];
+    // Convert to array, replace at position, convert back
+    const cells = [];
+    const rendered = line.replace(/\{E\}/g, state.eye);
+    for (let i = 0; i < rendered.length; i++) cells.push(rendered[i]);
+    while (cells.length < 12) cells.push(' ');
+
+    if (state.selectedChar === '{E}') {
+      // Replace with eye placeholder - need to work with raw line
+      cells[col] = state.eye;
+      frame[row] = cells.slice(0, 12).join('');
+      // Re-insert {E} at this position
+      const before = frame[row].substring(0, col);
+      const after = frame[row].substring(col + 1);
+      frame[row] = before + '{E}' + after;
+    } else {
+      cells[col] = state.selectedChar;
+      // Rebuild the line preserving {E} markers
+      // Simple approach: if original had {E}, try to preserve
+      frame[row] = rebuildLine(frame[row], col, state.selectedChar, state.eye);
+    }
+    renderAll();
+    return;
+  }
+
+  // Open inline input
+  const rect = cellEl.getBoundingClientRect();
+  const input = document.createElement('div');
+  input.className = 'cell-input';
+  input.style.left = rect.left + 'px';
+  input.style.top = rect.top + 'px';
+  input.innerHTML = '<input type="text" maxlength="1" autofocus>';
+  document.body.appendChild(input);
+  const inp = input.querySelector('input');
+  inp.focus();
+  inp.onkeydown = (e) => {
+    if (e.key === 'Escape') { input.remove(); return; }
+    if (e.key === 'Enter' || (inp.value.length === 1 && e.key !== 'Backspace')) {
+      const ch = inp.value || ' ';
+      if (isFullWidth(ch)) {
+        showWidthWarning();
+      }
+      saveHistory();
+      const frame = state.frames[state.currentFrame];
+      frame[row] = rebuildLine(frame[row], col, ch, state.eye);
+      input.remove();
+      renderAll();
+    }
+  };
+  inp.oninput = () => {
+    if (inp.value.length >= 1) {
+      const ch = inp.value[0];
+      if (isFullWidth(ch)) showWidthWarning();
+      saveHistory();
+      const frame = state.frames[state.currentFrame];
+      frame[row] = rebuildLine(frame[row], col, ch, state.eye);
+      input.remove();
+      renderAll();
+    }
+  };
+  inp.onblur = () => setTimeout(() => input.remove(), 100);
+}
+
+function rebuildLine(originalLine, col, newChar, eye) {
+  // Render the line to get actual characters
+  const rendered = originalLine.replace(/\{E\}/g, eye);
+  const chars = [...rendered];
+  while (chars.length < 12) chars.push(' ');
+  chars[col] = newChar;
+
+  // Try to preserve {E} markers
+  let result = chars.slice(0, 12).join('');
+
+  // Find eye positions in original
+  let eyeCount = (originalLine.match(/\{E\}/g) || []).length;
+  if (eyeCount > 0) {
+    // Find positions of eye char in result and replace back with {E}
+    let replaced = 0;
+    let newResult = '';
+    for (let i = 0; i < result.length && replaced < eyeCount; i++) {
+      if (result[i] === eye && i !== col) {
+        newResult += '{E}';
+        replaced++;
+      } else {
+        newResult += result[i];
+      }
+    }
+    newResult += result.substring(newResult.length - (replaced * 2));
+    if (replaced === eyeCount) result = newResult;
+  }
+
+  return result;
+}
+
+function showWidthWarning() {
+  const w = document.getElementById('widthWarning');
+  w.style.display = 'block';
+  setTimeout(() => w.style.display = 'none', 2000);
+}
+
+function renderCharPalette() {
+  const el = document.getElementById('charPalette');
+  el.innerHTML = '';
+  for (const ch of CHAR_PALETTE) {
+    const btn = document.createElement('div');
+    btn.className = 'char-btn' + (state.selectedChar === ch ? ' selected' : '');
+    if (ch === ' ') {
+      btn.textContent = '␣';
+      btn.style.color = 'var(--text-dim)';
+      btn.title = '空白（清除格子）';
+    } else {
+      btn.textContent = ch;
+    }
+    btn.onclick = () => {
+      state.selectedChar = state.selectedChar === ch ? null : ch;
+      renderCharPalette();
+    };
+    el.appendChild(btn);
+  }
+  // Add {E} button
+  const eyeBtn = document.createElement('div');
+  eyeBtn.className = 'char-btn' + (state.selectedChar === '{E}' ? ' selected' : '');
+  eyeBtn.textContent = '{E}';
+  eyeBtn.style.width = '42px';
+  eyeBtn.style.fontSize = '10px';
+  eyeBtn.style.color = 'var(--accent2)';
+  eyeBtn.onclick = () => {
+    state.selectedChar = state.selectedChar === '{E}' ? null : '{E}';
+    renderCharPalette();
+  };
+  el.appendChild(eyeBtn);
+
+  // Struct palette
+  const sel = document.getElementById('structPalette');
+  sel.innerHTML = '';
+  for (const s of STRUCT_PALETTE) {
+    const btn = document.createElement('div');
+    btn.className = 'char-btn';
+    btn.style.width = 'auto';
+    btn.style.padding = '0 8px';
+    btn.style.fontSize = '11px';
+    btn.textContent = s;
+    btn.onclick = () => {
+      // Copy to clipboard
+      navigator.clipboard?.writeText(s);
+    };
+    sel.appendChild(btn);
+  }
+}
+
+function renderStats() {
+  const el = document.getElementById('statsSection');
+  el.innerHTML = '';
+  for (const name of STAT_NAMES) {
+    const row = document.createElement('div');
+    row.className = 'stat-row';
+    row.innerHTML = `
+      <span class="stat-name">${name}</span>
+      <input type="range" class="stat-slider" min="0" max="100" value="${state.stats[name]}" data-stat="${name}">
+      <span class="stat-val">${state.stats[name]}</span>
+    `;
+    row.querySelector('.stat-slider').oninput = (e) => {
+      state.stats[name] = parseInt(e.target.value);
+      row.querySelector('.stat-val').textContent = state.stats[name];
+      renderPreview();
+    };
+    el.appendChild(row);
+  }
+}
+
+function renderPreview() {
+  const card = document.getElementById('previewCard');
+  const frame = state.frames[state.currentFrame];
+  const eye = state.eye;
+  const hat = HAT_ART[state.hat];
+  const rarityColor = RARITY_COLORS[state.rarity];
+  const stars = RARITY_STARS[state.rarity];
+
+  let artLines = frame.map(l => l.replace(/\{E\}/g, eye));
+  if (hat && artLines[0].trim() === '') {
+    artLines[0] = hat;
+  }
+
+  card.innerHTML = `
+    <div class="preview-rarity">
+      <span style="color:${rarityColor}">${stars} ${state.rarity.toUpperCase()}</span>
+      <span style="color:${rarityColor}">JELLYFISH</span>
+    </div>
+    ${state.shiny ? '<div class="preview-shiny">✨ SHINY ✨</div>' : ''}
+    <div class="preview-art" style="color:${rarityColor}">${artLines.join('\n')}</div>
+    <div class="preview-name">${state.name}</div>
+    <div class="preview-personality">"${state.personality}"</div>
+    ${STAT_NAMES.map(s => `
+      <div class="preview-stat">
+        <span class="preview-stat-name">${s}</span>
+        <div class="preview-stat-bar">
+          <div class="preview-stat-fill" style="width:${state.stats[s]}%;background:${rarityColor}"></div>
+        </div>
+        <span class="preview-stat-val">${state.stats[s]}</span>
+      </div>
+    `).join('')}
+  `;
+
+  // Mini preview
+  const mini = document.getElementById('miniPreview');
+  mini.textContent = artLines.join('\n');
+  mini.style.color = rarityColor;
+}
+
+function renderFrameTabs() {
+  document.querySelectorAll('.frame-tab').forEach(tab => {
+    tab.classList.toggle('active', parseInt(tab.dataset.frame) === state.currentFrame);
+    tab.onclick = () => {
+      if (state.playing) stopPlay();
+      state.currentFrame = parseInt(tab.dataset.frame);
+      renderAll();
+    };
+  });
+}
+
+function togglePlay() {
+  if (state.playing) {
+    stopPlay();
+  } else {
+    state.playing = true;
+    document.getElementById('playBtn').classList.add('playing');
+    document.getElementById('playBtn').textContent = '⏸ 停止';
+    let f = 0;
+    state.playInterval = setInterval(() => {
+      state.currentFrame = f % 3;
+      f++;
+      renderGrid();
+      renderPreview();
+      renderFrameTabs();
+    }, 500);
+  }
+}
+
+function stopPlay() {
+  state.playing = false;
+  clearInterval(state.playInterval);
+  document.getElementById('playBtn').classList.remove('playing');
+  document.getElementById('playBtn').textContent = '▶ 播放';
+}
+
+function renderAll() {
+  renderTemplateSelector();
+  renderGrid();
+  renderCharPalette();
+  renderPreview();
+  renderFrameTabs();
+}
+
+// ===== EXPORT =====
+function exportPatch() {
+  const frames = state.frames;
+  const escFrame = (f) => f.map(l => l.replace(/\\/g, '\\\\').replace(/"/g, '\\"')).map(l => `"${l}"`).join(',');
+  const artStr = `[uG8]:[[${escFrame(frames[0])}],[${escFrame(frames[1])}],[${escFrame(frames[2])}]]`;
+
+  const pyContent = `"""Buddy Skin Patch — 自動套用自訂外觀
+Generated by Buddy Skin Editor"""
+import json, os, re
+
+HOME = os.path.expanduser("~")
+CLI_JS = os.path.join(HOME, "AppData/Roaming/npm/node_modules/@anthropic-ai/claude-code/cli.js")
+CLAUDE_JSON = os.path.join(HOME, ".claude.json")
+
+print("[1/3] Patching .claude.json ...")
+with open(CLAUDE_JSON, "r", encoding="utf-8") as f:
+    data = json.load(f)
+data["companion"] = {
+    "name": ${JSON.stringify(state.name)},
+    "personality": ${JSON.stringify(state.personality)},
+    "hatchedAt": data.get("companion", {}).get("hatchedAt", 1775020915832),
+}
+data["companionMuted"] = False
+with open(CLAUDE_JSON, "w", encoding="utf-8") as f:
+    json.dump(data, f, ensure_ascii=False, indent=4)
+print("  name=${state.name}")
+
+print("[2/3] Patching cli.js bones ...")
+with open(CLI_JS, "r", encoding="utf-8") as f:
+    content = f.read()
+
+old_dh1 = re.search(r'function dh1\\(q\\)\\{.*?\\}(?=function ch1)', content)
+if old_dh1:
+    new_dh1 = (
+        'function dh1(q){return{bones:{rarity:"${state.rarity}",species:"jellyfish",'
+        'eye:"${state.eye}",hat:"${state.hat}",shiny:${state.shiny},'
+        'stats:{${STAT_NAMES.map(s => `${s}:${state.stats[s]}`).join(',')}}},'
+        'inspirationSeed:155482}}'
+    )
+    content = content[:old_dh1.start()] + new_dh1 + content[old_dh1.end():]
+    print("  bones patched")
+
+content = content.replace("Lc8=100", "Lc8=10")
+
+print("[3/3] Patching ASCII art ...")
+import re as _re
+start = content.find("[uG8]:[[")
+if start != -1:
+    depth = 0
+    for i in range(start + len("[uG8]:"), len(content)):
+        if content[i] == "[": depth += 1
+        elif content[i] == "]": depth -= 1
+        if depth == 0: break
+    end = i + 1
+    new_art = '${artStr.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'
+    content = content[:start] + new_art + content[end:]
+    print("  art patched")
+
+with open(CLI_JS, "w", encoding="utf-8") as f:
+    f.write(content)
+print("\\n=== Done! Restart Claude Code ===")
+`;
+
+  const batContent = `@echo off
+echo === Buddy Skin Patch ===
+python -X utf8 "%~dp0patch-buddy.py"
+echo === Done! Restart Claude Code to see changes ===
+pause
+`;
+
+  // Create zip with both files
+  const zip = createSimpleZip([
+    { name: 'patch-buddy.bat', content: batContent },
+    { name: 'patch-buddy.py', content: pyContent }
+  ]);
+
+  const blob = new Blob([zip], { type: 'application/zip' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'buddy-skin-patch.zip';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// Simple ZIP creator (no external deps)
+function createSimpleZip(files) {
+  // Use individual file downloads instead for simplicity
+  // Download .bat
+  const batBlob = new Blob([files[0].content], { type: 'text/plain' });
+  const pyBlob = new Blob([files[1].content], { type: 'text/plain' });
+
+  // Download py file
+  setTimeout(() => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(pyBlob);
+    a.download = 'patch-buddy.py';
+    a.click();
+  }, 500);
+
+  return new TextEncoder().encode(files[0].content);
+}
+
+// ===== INIT =====
+document.getElementById('playBtn').onclick = togglePlay;
+document.getElementById('undoBtn').onclick = undo;
+document.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); undo(); }
+});
+document.getElementById('exportBtn').onclick = () => {
+  // Download bat
+  const batContent = `@echo off\necho === Buddy Skin Patch ===\npython -X utf8 "%~dp0patch-buddy.py"\necho === Done! Restart Claude Code ===\npause\n`;
+  const a1 = document.createElement('a');
+  a1.href = URL.createObjectURL(new Blob([batContent], {type:'text/plain'}));
+  a1.download = 'patch-buddy.bat';
+  a1.click();
+
+  // Then export py
+  setTimeout(exportPatch, 300);
+};
+
+document.getElementById('nameInput').oninput = (e) => { state.name = e.target.value; renderPreview(); };
+document.getElementById('eyeSelect').onchange = (e) => { state.eye = e.target.value; renderAll(); };
+document.getElementById('hatSelect').onchange = (e) => { state.hat = e.target.value; renderPreview(); };
+document.getElementById('raritySelect').onchange = (e) => { state.rarity = e.target.value; renderPreview(); };
+document.getElementById('personalityInput').oninput = (e) => { state.personality = e.target.value; renderPreview(); };
+document.getElementById('shinyToggle').onclick = (e) => {
+  state.shiny = !state.shiny;
+  e.currentTarget.classList.toggle('on', state.shiny);
+  renderPreview();
+};
+
+renderStats();
+renderAll();
+</script>
+</body>
+</html>
