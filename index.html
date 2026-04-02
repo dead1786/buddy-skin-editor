@@ -438,9 +438,25 @@ body::after {
 }
 .preview-shiny {
   text-align: center;
-  color: var(--accent3);
   font-weight: 700;
   margin-bottom: 8px;
+  background: linear-gradient(90deg, #ff0000, #ff8800, #ffff00, #00ff00, #0088ff, #4400ff, #8800ff);
+  background-size: 400% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shiny-rainbow 2s linear infinite;
+}
+@keyframes shiny-rainbow {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 400% 50%; }
+}
+.preview-art.shiny-art {
+  animation: shiny-glow 2s ease-in-out infinite;
+}
+@keyframes shiny-glow {
+  0%, 100% { filter: drop-shadow(0 0 4px rgba(255,215,0,0.3)); }
+  50% { filter: drop-shadow(0 0 12px rgba(255,215,0,0.8)); }
 }
 .preview-art {
   text-align: center;
@@ -632,20 +648,22 @@ body::after {
           <div class="setting">
             <label>眼睛</label>
             <select id="eyeSelect">
-              <option value="·">·</option>
+              <option value="·" selected>·</option>
               <option value="✦">✦</option>
               <option value="×">×</option>
               <option value="◉">◉</option>
               <option value="@">@</option>
               <option value="°">°</option>
-              <option value="♥" selected>♥</option>
+              <option value="♥">♥</option>
+              <option value="★">★</option>
+              <option value="○">○</option>
             </select>
           </div>
           <div class="setting">
             <label>帽子</label>
             <select id="hatSelect">
-              <option value="none">無</option>
-              <option value="crown" selected>crown \^^^/</option>
+              <option value="none" selected>無</option>
+              <option value="crown">crown \^^^/</option>
               <option value="tophat">tophat [___]</option>
               <option value="propeller">propeller -+-</option>
               <option value="halo">halo (   )</option>
@@ -706,21 +724,22 @@ const SPECIES_TEMPLATES = {
   duck:[["            ","    __      ","  <({E} )___  ","   (  ._>   ","    `--´    "],["            ","    __      ","  <({E} )___  ","   (  ._>   ","    `--´~   "],["            ","    __      ","  <({E} )___  ","   (  .__>  ","    `--´    "]],
   goose:[["            ","     ({E}>    ","     ||     ","   _(__)_   ","    ^^^^    "],["            ","    ({E}>     ","     ||     ","   _(__)_   ","    ^^^^    "],["            ","     ({E}>>   ","     ||     ","   _(__)_   ","    ^^^^    "]],
   blob:[["            ","   .----.   ","  ( {E}  {E} )  ","  (      )  ","   `----´   "],["            ","  .------.  "," (  {E}  {E}  ) "," (        ) ","  `------´  "],["            ","    .--.    ","   ({E}  {E})   ","   (    )   ","    `--´    "]],
-  cat:[["            ","   /\\_/\\    ","  ( {E}   {E})  ","  (  ω  )   ",'  (")_(")   '],["            ","   /\\_/\\    ","  ( {E}   {E})  ","  (  ω  )   ",'  (")_(")~  '],["            ","   /\\-/\\    ","  ( {E}   {E})  ","  (  ω  )   ",'  (")_(")   ']],
+  cat:[["            ","   /\\__/\\   ","  ( {E}  {E} )  ","  (  ω   )  ",'  (")__(")   '],["            ","   /\\__/\\   ","  ( {E}  {E} )  ","  (  ω   )  ",'  (")__(")~  '],["            ","   /\\--/\\   ","  ( {E}  {E} )  ","  (  ω   )  ",'  (")__(")   ']],
   dragon:[["            ","  /^\\  /^\\  "," <  {E}  {E}  > "," (   ~~   ) ","  `-vvvv-´  "],["            ","  /^\\  /^\\  "," <  {E}  {E}  > "," (        ) ","  `-vvvv-´  "],["   ~    ~   ","  /^\\  /^\\  "," <  {E}  {E}  > "," (   ~~   ) ","  `-vvvv-´  "]],
-  salamander:[["            ","   .----.   ","  ( {E}  {E} )  ","  (______)  ","  /\\/\\/\\/\\  "],["            ","   .----.   ","  ( {E}  {E} )  ","  (______)  ","  \\/\\/\\/\\/  "],["     o      ","   .----.   ","  ( {E}  {E} )  ","  (______)  ","  /\\/\\/\\/\\  "]],
-  capybara:[["            ","   /\\  /\\   ","  (({E})({E}))  ","  (  ><  )  ","   `----´   "],["            ","   /\\  /\\   ","  (({E})({E}))  ","  (  ><  )  ","   .----.   "],["            ","   /\\  /\\   ","  (({E})(-))  ","  (  ><  )  ","   `----´   "]],
+  octopus:[["            ","   .----.   ","  ( {E}  {E} )  ","  (______)  ","  /\\/\\/\\/\\  "],["            ","   .----.   ","  ( {E}  {E} )  ","  (______)  ","  \\/\\/\\/\\/  "],["     o      ","   .----.   ","  ( {E}  {E} )  ","  (______)  ","  /\\/\\/\\/\\  "]],
+  owl:[["            ","   /\\  /\\   ","  (({E})({E}))  ","  (  ><  )  ","   `----´   "],["            ","   /\\  /\\   ","  (({E})({E}))  ","  (  ><  )  ","   .----.   "],["            ","   /\\  /\\   ","  (({E})(-))  ","  (  ><  )  ","   `----´   "]],
   mushroom:[["            ","  .---.     ","  ({E}>{E})     "," /(   )\\    ","  `---´     "],["            ","  .---.     ","  ({E}>{E})     "," |(   )|    ","  `---´     "],["  .---.     ","  ({E}>{E})     "," /(   )\\    ","  `---´     ","   ~ ~      "]],
-  ghost:[["            ","   _,--._   ","  ( {E}  {E} )  "," /[______]\\ ","  ``    ``  "],["            ","   _,--._   ","  ( {E}  {E} )  "," /[______]\\ ","   ``  ``   "],["            ","   _,--._   ","  ( {E}  {E} )  "," /[======]\\ ","  ``    ``  "]],
-  owl:[["            "," {E}    .--.  ","  \\  ( @ )  ","   \\_`--´   ","  ~~~~~~~   "],["            ","  {E}   .--.  ","  |  ( @ )  ","   \\_`--´   ","  ~~~~~~~   "],["            "," {E}    .--.  ","  \\  ( @  ) ","   \\_`--´   ","   ~~~~~~   "]],
-  fox:[["            ","   .----.   ","  / {E}  {E} \\  ","  |      |  ","  ~`~``~`~  "],["            ","   .----.   ","  / {E}  {E} \\  ","  |      |  ","  `~`~~`~`  "],["    ~  ~    ","   .----.   ","  / {E}  {E} \\  ","  |      |  ","  ~~`~~`~~  "]],
-  penguin:[["            ","}~(______)~{","}~({E} .. {E})~{","  ( .--. )  ","  (_/  \\_)  "],["            ","~}(______){~","~}({E} .. {E}){~","  ( .--. )  ","  (_/  \\_)  "],["            ","}~(______)~{","}~({E} .. {E})~{","  (  --  )  ","  ~_/  \\_~  "]],
-  snail:[["            ","  n______n  "," ( {E}    {E} ) "," (   oo   ) ","  `------´  "],["            ","  n______n  "," ( {E}    {E} ) "," (   Oo   ) ","  `------´  "],["    ~  ~    ","  u______n  "," ( {E}    {E} ) "," (   oo   ) ","  `------´  "]],
-  squid:[["            "," n  ____  n "," | |{E}  {E}| | "," |_|    |_| ","   |    |   "],["            ","    ____    "," n |{E}  {E}| n "," |_|    |_| ","   |    |   "],[" n        n "," |  ____  | "," | |{E}  {E}| | "," |_|    |_| ","   |    |   "]],
-  crab:[["            ","   .[||].   ","  [ {E}  {E} ]  ","  [ ==== ]  ","  `------´  "],["            ","   .[||].   ","  [ {E}  {E} ]  ","  [ -==- ]  ","  `------´  "],["     *      ","   .[||].   ","  [ {E}  {E} ]  ","  [ ==== ]  ","  `------´  "]],
+  turtle:[["            ","   _,--._   ","  ( {E}  {E} )  "," /[______]\\ ","  ``    ``  "],["            ","   _,--._   ","  ( {E}  {E} )  "," /[______]\\ ","   ``  ``   "],["            ","   _,--._   ","  ( {E}  {E} )  "," /[======]\\ ","  ``    ``  "]],
+  snail:[["            "," {E}    .--.  ","  \\  ( @ )  ","   \\_`--´   ","  ~~~~~~~   "],["            ","  {E}   .--.  ","  |  ( @ )  ","   \\_`--´   ","  ~~~~~~~   "],["            "," {E}    .--.  ","  \\  ( @  ) ","   \\_`--´   ","   ~~~~~~   "]],
+  ghost:[["            ","   .----.   ","  / {E}  {E} \\  ","  |      |  ","  ~`~``~`~  "],["            ","   .----.   ","  / {E}  {E} \\  ","  |      |  ","  `~`~~`~`  "],["    ~  ~    ","   .----.   ","  / {E}  {E} \\  ","  |      |  ","  ~~`~~`~~  "]],
+  axolotl:[["            ","}~(______)~{","}~({E} .. {E})~{","  ( .--. )  ","  (_/  \\_)  "],["            ","~}(______){~","~}({E} .. {E}){~","  ( .--. )  ","  (_/  \\_)  "],["            ","}~(______)~{","}~({E} .. {E})~{","  (  --  )  ","  ~_/  \\_~  "]],
+  capybara:[["            ","  n______n  "," ( {E}    {E} ) "," (   oo   ) ","  `------´  "],["            ","  n______n  "," ( {E}    {E} ) "," (   Oo   ) ","  `------´  "],["    ~  ~    ","  u______n  "," ( {E}    {E} ) "," (   oo   ) ","  `------´  "]],
+  cactus:[["            "," n  ____  n "," | |{E}  {E}| | "," |_|    |_| ","   |    |   "],["            ","    ____    "," n |{E}  {E}| n "," |_|    |_| ","   |    |   "],[" n        n "," |  ____  | "," | |{E}  {E}| | "," |_|    |_| ","   |    |   "]],
+  robot:[["            ","   .[||].   ","  [ {E}  {E} ]  ","  [ ==== ]  ","  `------´  "],["            ","   .[||].   ","  [ {E}  {E} ]  ","  [ -==- ]  ","  `------´  "],["     *      ","   .[||].   ","  [ {E}  {E} ]  ","  [ ==== ]  ","  `------´  "]],
   jellyfish:[["            ","  ╭━━━━━━╮ "," ╭  {E}  {E}  ╮","  ╰┬┬┬┬┬┬╯ ","   ┆┆┆┆┆┆  "],["            ","  ╭━━━━━━╮ "," ╭  {E}  {E}  ╮","  ╰┬┬┬┬┬┬╯ ","   ∫∫∫∫∫∫  "],["            ","  ╭━━━━━━╮ "," ╭  {E}  {E}  ╮","  ╰┬┬┬┬┬┬╯ ","   ┆┆┆┆┆┆  "]],
-  bat:[["            ","   (\\__/)   ","  ( {E}  {E} )  "," =(  ..  )= ",'  (")__(")  '],["            ","   (|__/)   ","  ( {E}  {E} )  "," =(  ..  )= ",'  (")__(")  '],["            ","   (\\__/)   ","  ( {E}  {E} )  "," =( .  . )= ",'  (")__(")  ']],
-  turtle:[["            "," .-o-OO-o-. ","(__________)","   |{E}  {E}|   ","   |____|   "],["            "," .-O-oo-O-. ","(__________)","   |{E}  {E}|   ","   |____|   "],["   . o  .   "," .-o-OO-o-. ","(__________)","   |{E}  {E}|   ","   |____|   "]]
+  rabbit:[["            ","   (\\__/)   ","  ( {E}  {E} )  "," =(  ..  )= ",'  (")__(")  '],["            ","   (|__/)   ","  ( {E}  {E} )  "," =(  ..  )= ",'  (")__(")  '],["            ","   (\\__/)   ","  ( {E}  {E} )  "," =( .  . )= ",'  (")__(")  ']],
+  penguin:[["            "," .-o-OO-o-. ","(__________)","   |{E}  {E}|   ","   |____|   "],["            "," .-O-oo-O-. ","(__________)","   |{E}  {E}|   ","   |____|   "],["   . o  .   "," .-o-OO-o-. ","(__________)","   |{E}  {E}|   ","   |____|   "]],
+  chonk:[["            ","  /\\    /\\  "," ( {E}    {E} ) "," (   ..   ) ","  `------´  "],["            ","  /\\    /|  "," ( {E}    {E} ) "," (   ..   ) ","  `------´  "],["            ","  /\\    /\\  "," ( {E}    {E} ) "," (   ..   ) ","  `------´~ "]]
 };
 
 const HAT_ART = {
@@ -737,20 +756,22 @@ const HAT_ART = {
 const RARITY_STARS = { common:"★", uncommon:"★★", rare:"★★★", epic:"★★★★", legendary:"★★★★★" };
 const RARITY_COLORS = { common:"var(--common)", uncommon:"var(--uncommon)", rare:"var(--rare)", epic:"var(--epic)", legendary:"var(--legendary)" };
 const STAT_NAMES = ["DEBUGGING","PATIENCE","CHAOS","WISDOM","SNARK"];
+const EYE_CHARS = ["·","✦","×","◉","@","°","♥","★","☆","◆","●","○"];
+const BUDDY_NAMES = ["Crumpet","Soup","Pickle","Biscuit","Moth","Gravy"];
 const CHAR_PALETTE = [" ","╭","╮","╰","╯","━","┬","┆","∫","│","─","(",")","/","\\","[","]","{","}","<",">","|","_",".",",","~","`","^","'",'"',"=","+","-","*","@","#","♥","◉","✦","°"];
 const STRUCT_PALETTE = ["⎛","⎞","╭━━━━━━╮","╰┬┬┬┬┬┬╯","┆┆┆┆┆┆","∫∫∫∫∫∫","/\\/\\/\\/\\",".----.","(______)","``    ``"];
 
 // ===== STATE =====
 let state = {
-  frames: JSON.parse(JSON.stringify(SPECIES_TEMPLATES.jellyfish)),
+  frames: JSON.parse(JSON.stringify(SPECIES_TEMPLATES.cat)),
   currentFrame: 0,
-  species: "jellyfish",
-  eye: "♥",
-  hat: "crown",
-  name: "Frosty",
-  personality: "傲嬌毒舌的水母精靈，會嫌棄凱的每一個操作但偷偷幫他檢查有沒有寫錯。嘴上說討厭加班，身體很誠實地陪到最後一刻。",
-  rarity: "legendary",
-  shiny: true,
+  species: "cat",
+  eye: "·",
+  hat: "none",
+  name: "Biscuit",
+  personality: "A common cat of few words.",
+  rarity: "common",
+  shiny: false,
   stats: { DEBUGGING:100, PATIENCE:100, CHAOS:100, WISDOM:100, SNARK:100 },
   selectedChar: null,
   playing: false,
@@ -825,6 +846,8 @@ function renderTemplateSelector() {
       state.species = sp;
       state.frames = JSON.parse(JSON.stringify(SPECIES_TEMPLATES[sp]));
       state.currentFrame = 0;
+      state.name = BUDDY_NAMES[state.eye.charCodeAt(0) % BUDDY_NAMES.length];
+      state.personality = `A ${state.rarity} ${sp} of few words.`;
       renderAll();
     };
     el.appendChild(btn);
@@ -1003,17 +1026,22 @@ function renderPreview() {
   const stars = RARITY_STARS[state.rarity];
 
   let artLines = frame.map(l => l.replace(/\{E\}/g, eye));
-  if (hat && artLines[0].trim() === '') {
-    artLines[0] = hat;
+  if (hat) {
+    if (artLines[0].trim() === '') {
+      artLines[0] = hat;
+    } else {
+      artLines.unshift(hat);
+      artLines = artLines.slice(0, 5);
+    }
   }
 
   card.innerHTML = `
     <div class="preview-rarity">
       <span style="color:${rarityColor}">${stars} ${state.rarity.toUpperCase()}</span>
-      <span style="color:${rarityColor}">JELLYFISH</span>
+      <span style="color:${rarityColor}">${state.species.toUpperCase()}</span>
     </div>
     ${state.shiny ? '<div class="preview-shiny">✨ SHINY ✨</div>' : ''}
-    <div class="preview-art" style="color:${rarityColor}">${artLines.join('\n')}</div>
+    <div class="preview-art${state.shiny ? ' shiny-art' : ''}" style="color:${rarityColor}">${artLines.join('\n')}</div>
     <div class="preview-name">${state.name}</div>
     <div class="preview-personality">"${state.personality}"</div>
     ${STAT_NAMES.map(s => `
@@ -1199,9 +1227,9 @@ document.getElementById('exportBtn').onclick = () => {
 };
 
 document.getElementById('nameInput').oninput = (e) => { state.name = e.target.value; renderPreview(); };
-document.getElementById('eyeSelect').onchange = (e) => { state.eye = e.target.value; renderAll(); };
+document.getElementById('eyeSelect').onchange = (e) => { state.eye = e.target.value; state.name = BUDDY_NAMES[state.eye.charCodeAt(0) % BUDDY_NAMES.length]; renderAll(); };
 document.getElementById('hatSelect').onchange = (e) => { state.hat = e.target.value; renderPreview(); };
-document.getElementById('raritySelect').onchange = (e) => { state.rarity = e.target.value; renderPreview(); };
+document.getElementById('raritySelect').onchange = (e) => { state.rarity = e.target.value; state.personality = `A ${state.rarity} ${state.species} of few words.`; renderPreview(); };
 document.getElementById('personalityInput').oninput = (e) => { state.personality = e.target.value; renderPreview(); };
 document.getElementById('shinyToggle').onclick = (e) => {
   state.shiny = !state.shiny;
